@@ -1,0 +1,11 @@
+.DS_Store
+__pycache__/
+*.pyc
+.codex_work/node_modules
+
+# Excel temporary lock files
+~$*.xlsx
+~$*.xlsm
+
+# Keep unrelated nested app out of the investing tracker repo.
+gallery-delivery/
