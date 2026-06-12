@@ -21,7 +21,7 @@ MAX_POSITION_ROWS = 150
 TRACKING_YEAR = 2026
 
 CURRENT_STOCK_POSITIONS = [
-    {"ticker": "CASH", "shares": 5526.75, "price": 1.00, "avg_cost": 1.00, "notes": "Estimated free cash / buying power after reconciling known activity through 2026-06-09, the 2026-06-11 SHLS call purchase, and closing SONY calls. Includes the user-reported $3,000 cash addition, which was not visible as a posted deposit in the CSV exports; confirm against broker buying power."},
+    {"ticker": "CASH", "shares": 18576.75, "price": 1.00, "avg_cost": 1.00, "notes": "Estimated brokerage cash after reconciling known activity through 2026-06-09, the 2026-06-11 SHLS call purchase, closing SONY calls, the user-reported $2,000 cash addition, the 2026-06-12 $10,000 transfer, and the CRWV put credit. CSP collateral obligations are shown separately in Options Positions / Dashboard."},
     {"ticker": "ETH", "shares": 1, "price": 2298.88, "avg_cost": None, "notes": "1 Ethereum token. Cost basis pending."},
     {"ticker": "ADEA", "shares": 100, "price": 29.69, "avg_cost": 29.69, "notes": "Bought 100 shares on 2026-06-08 per joint CSV. Current price set to fill pending live quote refresh."},
     {"ticker": "AEHR", "shares": 200, "price": 99.84, "avg_cost": 35.73, "notes": "Combined holdings from tracker plus YTD CSV activity. Price last refreshed 2026-05-28."},
@@ -82,6 +82,7 @@ CURRENT_OPTION_POSITIONS = [
     {"trade_id": 49, "strategy": "Long Call/Put", "status": "Open", "open_date": datetime(2026, 6, 3), "close_date": None, "ticker": "FIVN", "asset": "Option", "action": "Buy", "option_type": "Call", "strike": 25.00, "expiration": datetime(2026, 8, 21), "qty": 2, "entry_price": 4.00, "exit_price": 4.00, "fees": 0, "notes": "Open FIVN $25 8/21 calls per joint CSV.", "source": "Broker CSV"},
     {"trade_id": 50, "strategy": "Long Call/Put", "status": "Open", "open_date": datetime(2026, 6, 9), "close_date": None, "ticker": "FIVN", "asset": "Option", "action": "Buy", "option_type": "Call", "strike": 22.50, "expiration": datetime(2027, 1, 15), "qty": 1, "entry_price": 5.50, "exit_price": 5.50, "fees": 0, "notes": "Open FIVN $22.50 call per joint CSV.", "source": "Broker CSV"},
     {"trade_id": 55, "strategy": "Long Call/Put", "status": "Open", "open_date": datetime(2026, 6, 11), "close_date": None, "ticker": "SHLS", "asset": "Option", "action": "Buy", "option_type": "Call", "strike": 10.00, "expiration": datetime(2027, 1, 15), "qty": 2, "entry_price": 2.80, "exit_price": 2.80, "fees": 0, "notes": "Bought 2 SHLS $10 calls expiring 2027-01-15 at $2.80 each on 2026-06-11.", "source": "User trade update"},
+    {"trade_id": 56, "strategy": "Cash Secured Put", "status": "Open", "open_date": datetime(2026, 6, 12), "close_date": None, "ticker": "CRWV", "asset": "Option", "action": "Sell", "option_type": "Put", "strike": 100.00, "expiration": datetime(2026, 7, 17), "qty": 1, "entry_price": 10.50, "exit_price": 8.88, "fees": 0, "notes": "Sold 1 CRWV $100 put expiring 2026-07-17 for $10.50 credit. Screenshot current mark $8.88, CRWV price $104.27, breakeven $89.50.", "source": "Robinhood screenshot + user update"},
 ]
 
 CURRENT_STOCK_TRADES = [
@@ -96,6 +97,16 @@ CURRENT_STOCK_TRADES = [
     {"trade_id": 53, "strategy": "Stock Buy", "status": "Open", "open_date": datetime(2026, 6, 5), "close_date": None, "ticker": "CRWV", "asset": "Stock", "action": "Buy", "option_type": "", "strike": None, "expiration": None, "qty": 100, "entry_price": 102.43, "exit_price": None, "fees": 0, "notes": "Bought 50 CRWV at $103.07 and 50 at $101.79 on 2026-06-05 per individual CSV; weighted average $102.43.", "source": "Broker CSV"},
     {"trade_id": 54, "strategy": "Stock Buy", "status": "Open", "open_date": datetime(2026, 6, 9), "close_date": None, "ticker": "FIVN", "asset": "Stock", "action": "Buy", "option_type": "", "strike": None, "expiration": None, "qty": 100, "entry_price": 23.00, "exit_price": None, "fees": 0, "notes": "Bought 100 FIVN shares at $23.00 on 2026-06-09 per joint CSV.", "source": "Broker CSV"},
 ]
+
+CURRENT_CASH_TRANSFERS = [
+    {"date": datetime(2026, 6, 12), "amount": 10000.00, "direction": "In", "account": "Brokerage", "notes": "Moved from linked HYSA to brokerage to support CRWV CSP collateral."},
+]
+
+CASH_DEPLOYMENT_PLAN = {
+    "available_pool": 100000.00,
+    "start_date": datetime(2026, 6, 12),
+    "notes": "User plans to make up to $100k available for brokerage use over time, while keeping undeployed cash in linked HYSA until needed.",
+}
 
 
 COLORS = {
@@ -304,6 +315,7 @@ def build_workbook():
     ws_options = wb.create_sheet("Options Positions")
     ws_rev = wb.create_sheet("Revenue Tracker")
     ws_pos = wb.create_sheet("Portfolio")
+    ws_cash = wb.create_sheet("Cash Transfers")
     ws_ideas = wb.create_sheet("Trade Ideas")
     ws_checks = wb.create_sheet("Checks")
     ws_lists = wb.create_sheet("Lists")
@@ -317,12 +329,13 @@ def build_workbook():
     build_options_positions(ws_options, CURRENT_OPTION_POSITIONS)
     build_revenue_tracker(ws_rev)
     build_portfolio(ws_pos, CURRENT_STOCK_POSITIONS)
+    build_cash_transfers(ws_cash, CURRENT_CASH_TRANSFERS)
     build_trade_ideas(ws_ideas)
     build_dashboard(ws_dash)
     build_checks(ws_checks)
     build_lists(ws_lists)
 
-    for ws in [ws_dash, ws_guide, ws_log, ws_options, ws_rev, ws_pos, ws_ideas, ws_checks]:
+    for ws in [ws_dash, ws_guide, ws_log, ws_options, ws_rev, ws_pos, ws_cash, ws_ideas, ws_checks]:
         ws.freeze_panes = "A4"
 
     OUT_DIR.mkdir(parents=True, exist_ok=True)
@@ -810,6 +823,57 @@ def build_trade_ideas(ws):
             ws[f"{col}{row}"].number_format = "$#,##0;[Red]($#,##0);-"
     add_dropdown(ws, "L5:L204", ["Researching", "Proposed", "Entered", "Passed", "Closed", "Archived"])
     add_dropdown(ws, "D5:D204", ["Bullish", "Neutral-Bullish", "Neutral", "Neutral-Bearish", "Bearish", "Volatility"])
+
+
+def build_cash_transfers(ws, transfers):
+    add_title(
+        ws,
+        "Cash Transfers",
+        "Tracks external cash moved into or out of the brokerage account starting 2026-06-12. This is separate from option premium, stock sales, and trade P/L.",
+        7,
+    )
+    summary = [
+        ("Planned available cash pool", CASH_DEPLOYMENT_PLAN["available_pool"]),
+        ("Transferred to brokerage", f"=SUM(D5:D204)"),
+        ("Remaining outside brokerage / HYSA", f"=J1-J2"),
+        ("Plan notes", CASH_DEPLOYMENT_PLAN["notes"]),
+    ]
+    for idx, (label, value) in enumerate(summary, start=1):
+        ws.cell(idx, 9, label)
+        ws.cell(idx, 9).fill = PatternFill("solid", fgColor=COLORS["pale_blue"])
+        ws.cell(idx, 9).font = Font(bold=True, color=COLORS["dark_gray"])
+        ws.cell(idx, 10, value)
+        ws.cell(idx, 10).alignment = Alignment(wrap_text=True, vertical="top")
+        if idx <= 3:
+            ws.cell(idx, 10).number_format = "$#,##0;[Red]($#,##0);-"
+    ws.column_dimensions["I"].width = 30
+    ws.column_dimensions["J"].width = 48
+
+    headers = ["Date", "Direction", "Account", "Amount", "Running Net Transfer", "Notes", "Source"]
+    for col_idx, header in enumerate(headers, start=1):
+        ws.cell(4, col_idx, header)
+    style_header(ws[4])
+    max_rows = 200
+    for idx in range(max_rows):
+        row = 5 + idx
+        if idx < len(transfers):
+            t = transfers[idx]
+            signed_amount = t["amount"] if t["direction"] == "In" else -t["amount"]
+            values = [t["date"], t["direction"], t["account"], signed_amount, None, t["notes"], "User update"]
+        else:
+            values = [None] * len(headers)
+        for col_idx, value in enumerate(values, start=1):
+            ws.cell(row, col_idx, value)
+        ws.cell(row, 5).value = f'=IF($A{row}="","",SUM($D$5:D{row}))'
+
+    add_table(ws, "CashTransfers", f"A4:G{4 + max_rows}")
+    style_table(ws, 4, 4 + max_rows, 1, len(headers))
+    set_widths(ws, {"A": 12, "B": 12, "C": 18, "D": 14, "E": 20, "F": 52, "G": 14})
+    for row in range(5, 5 + max_rows):
+        ws.cell(row, 1).number_format = "yyyy-mm-dd"
+        ws.cell(row, 4).number_format = "$#,##0;[Red]($#,##0);-"
+        ws.cell(row, 5).number_format = "$#,##0;[Red]($#,##0);-"
+    add_dropdown(ws, f"B5:B{4 + max_rows}", ["In", "Out"])
 
 
 def build_dashboard(ws):
